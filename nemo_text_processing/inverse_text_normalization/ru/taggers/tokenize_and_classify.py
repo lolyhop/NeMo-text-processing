@@ -28,6 +28,7 @@ from nemo_text_processing.inverse_text_normalization.ru.taggers.money import Mon
 from nemo_text_processing.inverse_text_normalization.ru.taggers.ordinal import OrdinalFst
 from nemo_text_processing.inverse_text_normalization.ru.taggers.telephone import TelephoneFst
 from nemo_text_processing.inverse_text_normalization.ru.taggers.time import TimeFst
+from nemo_text_processing.inverse_text_normalization.ru.taggers.address import AddressFst
 from nemo_text_processing.inverse_text_normalization.ru.taggers.whitelist import WhiteListFst
 from nemo_text_processing.text_normalization.en.graph_utils import (
     INPUT_LOWER_CASED,
@@ -83,6 +84,10 @@ class ClassifyFst(GraphFst):
             decimal = DecimalFst(tn_decimal=tn_classify.decimal)
             decimal_graph = decimal.fst
 
+            address = AddressFst(tn_cardinal=tn_classify.cardinal)
+            address_graph = address.fst
+
+
             measure_graph = MeasureFst(tn_measure=tn_classify.measure).fst
             date_graph = DateFst(tn_date=tn_classify.date).fst
             word_graph = WordFst().fst
@@ -96,7 +101,7 @@ class ClassifyFst(GraphFst):
             classify = (
                 pynutil.add_weight(whitelist_graph, 1.01)
                 | pynutil.add_weight(time_graph, 1.1)
-                | pynutil.add_weight(date_graph, 1.09)
+                | pynutil.add_weight(address_graph, 0.95)
                 | pynutil.add_weight(decimal_graph, 1.1)
                 | pynutil.add_weight(measure_graph, 1.1)
                 | pynutil.add_weight(ordinal_graph, 1.1)
@@ -105,6 +110,7 @@ class ClassifyFst(GraphFst):
                 | pynutil.add_weight(electronic_graph, 1.1)
                 | pynutil.add_weight(cardinal_graph, 1.1)
                 | pynutil.add_weight(word_graph, 100)
+                | pynutil.add_weight(date_graph, 150.0)
             )
 
             punct = pynutil.insert("tokens { ") + pynutil.add_weight(punct_graph, weight=1.1) + pynutil.insert(" }")

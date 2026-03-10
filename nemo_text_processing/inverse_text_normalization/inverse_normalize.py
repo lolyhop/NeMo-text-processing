@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import re
 from argparse import ArgumentParser
 from time import perf_counter
 from typing import List
@@ -24,6 +25,10 @@ from nemo_text_processing.text_normalization.token_parser import TokenParser
 
 
 class InverseNormalizer(Normalizer):
+    _RU_FRACTION_RE = re.compile(r"(?<!\d)(\d+(?:\s\d{3})*)\s+дробь\s+(\d+(?:\s\d{3})*)(?!\d)")
+    _RU_MIXED_FRACTION_RE = re.compile(r"(?<!\d)(\d+(?:\s\d{3})*)\s+дробь\s+(\d+)\s+(\d+)(?!\d)")
+    _RU_FRACTION_WORD_GLUE_RE = re.compile(r"(\d+/\d+)(?=[A-Za-zА-Яа-яЁё])")
+
     """
     Inverse normalizer that converts text from spoken to written form. Useful for ASR postprocessing.
     Input is expected to have no punctuation outside of approstrophe (') and dash (-) and be lower cased.
@@ -144,6 +149,39 @@ class InverseNormalizer(Normalizer):
         self.parser = TokenParser()
         self.lang = lang
         self.max_number_of_permutations_per_split = max_number_of_permutations_per_split
+
+    def _post_process_ru_fraction(self, text: str) -> str:
+        if self.lang != "ru" or not text:
+            return text
+
+        def _replace_simple(match: re.Match) -> str:
+            left = match.group(1).replace(" ", "")
+            right = match.group(2).replace(" ", "")
+            return f"{left}/{right}"
+
+        def _replace_mixed(match: re.Match) -> str:
+            whole = match.group(1).replace(" ", "")
+            numerator = match.group(2)
+            denominator = match.group(3)
+            return f"{whole}/{numerator} {denominator}"
+
+        text = self._RU_MIXED_FRACTION_RE.sub(_replace_mixed, text)
+        text = self._RU_FRACTION_RE.sub(_replace_simple, text)
+
+        return self._RU_FRACTION_WORD_GLUE_RE.sub(r"\1 ", text)
+
+    def normalize(
+        self, text: str, verbose: bool = False, punct_pre_process: bool = False, punct_post_process: bool = False
+    ) -> str:
+        # TODO: Вынести логику `_post_process_ru_fraction` 
+        # в NeMo-text-processing/nemo_text_processing/inverse_text_normalization/ru/taggers/address.py
+        normalized = super().normalize(
+            text=text,
+            verbose=verbose,
+            punct_pre_process=punct_pre_process,
+            punct_post_process=punct_post_process,
+        )
+        return self._post_process_ru_fraction(normalized)
 
     def inverse_normalize_list(self, texts: List[str], verbose=False) -> List[str]:
         """

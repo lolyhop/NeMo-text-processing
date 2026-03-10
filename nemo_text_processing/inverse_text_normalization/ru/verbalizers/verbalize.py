@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from nemo_text_processing.inverse_text_normalization.en.verbalizers.whitelist import WhiteListFst
+from nemo_text_processing.inverse_text_normalization.ru.verbalizers.address import AddressFst
 from nemo_text_processing.inverse_text_normalization.ru.verbalizers.cardinal import CardinalFst
 from nemo_text_processing.inverse_text_normalization.ru.verbalizers.date import DateFst
 from nemo_text_processing.inverse_text_normalization.ru.verbalizers.decimal import DecimalFst
@@ -40,6 +41,7 @@ class VerbalizeFst(GraphFst):
         ordinal_graph = ordinal.fst
         decimal = DecimalFst()
         decimal_graph = decimal.fst
+        address_graph = AddressFst().fst
         whitelist_graph = WhiteListFst().fst
         electronic_graph = ElectronicFst().fst
         money_graph = MoneyFst().fst
@@ -53,6 +55,7 @@ class VerbalizeFst(GraphFst):
             | cardinal_graph
             | ordinal_graph
             | decimal_graph
+            | address_graph
             | electronic_graph
             | date_graph
             | money_graph

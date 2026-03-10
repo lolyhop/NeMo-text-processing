@@ -39,7 +39,8 @@ class OrdinalFst(GraphFst):
         self.graph = graph
 
         # do not invert numbers less than 10
-        graph = pynini.compose(graph, NEMO_DIGIT ** (2, ...))
+        # @chrnegor: Invert them too
+        graph = pynini.compose(graph, NEMO_DIGIT ** (1, ...))
         graph = pynutil.insert("integer: \"") + graph + pynutil.insert("\"")
         graph = self.add_tokens(graph)
         self.fst = graph.optimize()
